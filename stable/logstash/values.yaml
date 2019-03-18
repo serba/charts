@@ -162,6 +162,8 @@ persistence:
   accessMode: ReadWriteOnce
   size: 2Gi
 
+pipelinesPath: /usr/share/logstash/pipelines
+
 volumeMounts:
   - name: data
     mountPath: /usr/share/logstash/data
@@ -171,6 +173,11 @@ volumeMounts:
     mountPath: /usr/share/logstash/files
   - name: pipeline
     mountPath: /usr/share/logstash/pipeline
+  - name: pipelines
+    mountPath: /usr/share/logstash/pipelines
+  - name: pipeline-settings
+    mountPath: /usr/share/logstash/config/pipelines.yml
+    subPath: pipelines.yml
 
 volumes: []
   # - name: tls
@@ -230,16 +237,10 @@ elasticsearch:
   port: 9200
 
 ## ref: https://github.com/elastic/logstash-docker/blob/master/build/logstash/env2yaml/env2yaml.go
+## ref: https://www.elastic.co/guide/en/logstash/current/dir-layout.html#docker-layout
 config:
   config.reload.automatic: "true"
-  path.config: /usr/share/logstash/pipeline
   path.data: /usr/share/logstash/data
-
-  ## ref: https://www.elastic.co/guide/en/logstash/current/persistent-queues.html
-  queue.checkpoint.writes: 1
-  queue.drain: "true"
-  queue.max_bytes: 1gb  # disk capacity must be greater than the value of `queue.max_bytes`
-  queue.type: persisted
 
 ## Patterns for filters.
 ## Each YAML heredoc will become a separate pattern file.
@@ -247,90 +248,38 @@ patterns:
   # main: |-
   #   TESTING {"foo":.*}$
 
-## Custom files that can be referenced by plugins.
-## Each YAML heredoc will become located in the logstash home directory under
-## the files subdirectory.
-files:
-  # logstash-template.json: |-
-  #   {
-  #     "order": 0,
-  #     "version": 1,
-  #     "index_patterns": [
-  #       "logstash-*"
-  #     ],
-  #     "settings": {
-  #       "index": {
-  #         "refresh_interval": "5s"
-  #       }
-  #     },
-  #     "mappings": {
-  #       "doc": {
-  #         "_meta": {
-  #           "version": "1.0.0"
-  #         },
-  #         "enabled": false
-  #       }
-  #     },
-  #     "aliases": {}
-  #   }
 
-## Custom binary files encoded as base64 string that can be referenced by plugins
-## Each base64 encoded string is decoded & mounted as a file under logstash home directory under
-## the files subdirectory.
-binaryFiles: {}
+pipelineSettings:
+  alpha:
+    pipeline.workers: 1
+    queue.type: persisted
 
-## NOTE: To achieve multiple pipelines with this chart, current best practice
-## is to maintain one pipeline per chart release. In this way configuration is
-## simplified and pipelines are more isolated from one another.
-
-inputs:
-  main: |-
+pipelines:
+  alpha: |
     input {
-      # udp {
-      #   port => 1514
-      #   type => syslog
-      # }
-      # tcp {
-      #   port => 1514
-      #   type => syslog
-      # }
-      beats {
-        port => 5044
+      tcp {
+        port => 1514
+        type => syslog
       }
-      # http {
-      #   port => 8080
-      # }
-      # kafka {
-      #   ## ref: https://www.elastic.co/guide/en/logstash/current/plugins-inputs-kafka.html
-      #   bootstrap_servers => "kafka-input:9092"
-      #   codec => json { charset => "UTF-8" }
-      #   consumer_threads => 1
-      #   topics => ["source"]
-      #   type => "example"
-      # }
     }
-
-filters:
-  # main: |-
-  #   filter {
-  #   }
-
-outputs:
-  main: |-
+    filter {
+      ruby { code => "puts; puts 'from alpha filter: '; puts event" }
+    }
     output {
-      # stdout { codec => rubydebug }
-      elasticsearch {
-        hosts => ["${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}"]
-        manage_template => false
-        index => "%{[@metadata][beat]}-%{+YYYY.MM.dd}"
+      stdout {}
+    }
+  gold: |
+    input {
+      tcp {
+        port => 1515
+        type => syslog
       }
-      # kafka {
-      #   ## ref: https://www.elastic.co/guide/en/logstash/current/plugins-outputs-kafka.html
-      #   bootstrap_servers => "kafka-output:9092"
-      #   codec => json { charset => "UTF-8" }
-      #   compression_type => "lz4"
-      #   topic_id => "destination"
-      # }
+    }
+    filter {
+      ruby { code => "puts; puts 'from gold filter: '; puts event" }
+    }
+    output {
+      stdout {}
     }
 
 serviceAccount:

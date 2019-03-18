@@ -150,9 +150,12 @@ spec:
         - name: files
           configMap:
             name: {{ template "logstash.fullname" . }}-files
-        - name: pipeline
+        - name: pipelines
           configMap:
-            name: {{ template "logstash.fullname" . }}-pipeline
+            name: {{ template "logstash.fullname" . }}-pipelines
+        - name: pipeline-settings
+          configMap:
+            name: {{ template "logstash.fullname" . }}-pipeline-settings
     {{- with .Values.volumes }}
 {{ toYaml . | indent 8 }}
     {{- end }}

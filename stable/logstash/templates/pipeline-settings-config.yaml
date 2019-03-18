@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "logstash.fullname" . }}-pipeline-settings
+  labels:
+    app: {{ template "logstash.name" . }}
+    chart: {{ template "logstash.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  pipelines.yml: |-
+  {{- range $key, $value := .Values.pipelineSettings }}
+    {{- if $.Values.path }}
+    - pipeline.id: {{ $key }}
+      path.config: "{{ $.Values.path.config }}/pipeline-{{ $key }}.cfg"
+      {{- range $settingKey, $settingValue := $value }}
+      {{ $settingKey }}: {{ $settingValue }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
