@@ -252,33 +252,7 @@ pipelineSettings:
     pipeline.workers: 1
     queue.type: persisted
 
-pipelines:
-  alpha: |
-    input {
-      tcp {
-        port => 1514
-        type => syslog
-      }
-    }
-    filter {
-      ruby { code => "puts; puts 'from alpha filter: '; puts event" }
-    }
-    output {
-      stdout {}
-    }
-  gold: |
-    input {
-      tcp {
-        port => 1515
-        type => syslog
-      }
-    }
-    filter {
-      ruby { code => "puts; puts 'from gold filter: '; puts event" }
-    }
-    output {
-      stdout {}
-    }
+pipelines: {}
 
 serviceAccount:
   # Specifies whether a ServiceAccount should be created
