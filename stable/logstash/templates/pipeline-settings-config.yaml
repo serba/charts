@@ -9,12 +9,11 @@ metadata:
     heritage: {{ .Release.Service }}
 data:
   pipelines.yml: |-
-  {{- range $key, $value := .Values.pipelineSettings }}
-    {{- if $.Values.path }}
-    - pipeline.id: {{ $key }}
-      path.config: "{{ $.Values.path.config }}/pipeline-{{ $key }}.cfg"
-      {{- range $settingKey, $settingValue := $value }}
-      {{ $settingKey }}: {{ $settingValue }}
+  {{- range $id, $_ := .Values.pipelines }}
+    - pipeline.id: {{ $id }}
+      path.config: "{{ $.Values.pipelinesPath }}/{{ $id }}.pipeline"
+      {{- $settings := index $.Values.pipelineSettings $id }}
+      {{- range $key, $val:= $settings }}
+      {{ $key }}: {{ $val }}
       {{- end }}
-    {{- end }}
   {{- end }}
