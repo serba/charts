@@ -171,8 +171,6 @@ volumeMounts:
     mountPath: /usr/share/logstash/patterns
   - name: files
     mountPath: /usr/share/logstash/files
-  - name: pipeline
-    mountPath: /usr/share/logstash/pipeline
   - name: pipelines
     mountPath: /usr/share/logstash/pipelines
   - name: pipeline-settings
